@@ -1,0 +1,98 @@
+FSTAR_HOME ?= /home/build/FStar
+# Make sure that this value does NOT end in a '/'!
+PROJECT_HOME ?= /home/build/acmestar/fstar
+
+CACHE_DIR     ?= $(PROJECT_HOME)/.cache
+HINT_DIR      ?= $(PROJECT_HOME)/.hints
+
+.PHONY: all verify clean
+
+all:
+	rm -f .depend && $(MAKE) .depend
+	$(MAKE) verify
+
+FSTAR_INCLUDE_DIRS = $(PROJECT_HOME)
+
+FSTAR_FLAGS = --cmi \
+  --cache_checked_modules --cache_dir $(CACHE_DIR) \
+  --already_cached "+Prims +FStar +LowStar +C +Spec.Loops +TestLib" \
+  $(addprefix --include ,$(FSTAR_INCLUDE_DIRS)) \
+  --warn_error -331
+
+FSTAR = $(FSTAR_HOME)/bin/fstar.exe $(FSTAR_FLAGS) $(OTHERFLAGS)
+
+ENABLE_HINTS = --use_hints --use_hint_hashes --record_hints # --query_stats
+
+ALL_SOURCES = $(wildcard *.fst) $(wildcard *.fsti)
+
+ROOTS = $(filter-out $(FIXME),$(ALL_SOURCES))
+
+ifeq ($(OS),Windows_NT)
+  export OCAMLPATH := $(FSTAR_HOME)/bin;$(OCAMLPATH)
+else
+  export OCAMLPATH := $(FSTAR_HOME)/bin:$(OCAMLPATH)
+endif
+
+.depend:
+	$(info $(ROOTS))
+	$(FSTAR) --dep full $(ROOTS) --extract '* -Prims -LowStar -FStar' > $@
+
+include .depend
+
+$(HINT_DIR):
+	mkdir -p $@
+
+$(CACHE_DIR):
+	mkdir -p $@
+
+$(CACHE_DIR)/%.checked: | .depend $(HINT_DIR) $(CACHE_DIR)
+	$(FSTAR) $< $(ENABLE_HINTS) --hint_file $(HINT_DIR)/$(notdir $*).hints
+
+verify: $(addsuffix .checked, $(addprefix $(CACHE_DIR)/,$(ROOTS)))
+
+# Targets for interactive mode
+
+%.fst-in:
+	$(info $(FSTAR_FLAGS) \
+	  $(ENABLE_HINTS) --hint_file $(HINT_DIR)/$(basename $@).fst.hints)
+
+%.fsti-in:
+	$(info $(FSTAR_FLAGS) \
+	  $(ENABLE_HINTS) --hint_file $(HINT_DIR)/$(basename $@).fsti.hints)
+
+#OCaml extraction
+CODEGEN=OCaml
+
+# Added "-bin-annot" to make merlin-jump work
+OCAMLOPT = ocamlfind opt -package fstarlib -linkpkg -g -I ocaml -bin-annot -w -8-20-26
+
+LIB_BASE_FILES = Helpers DY.Principals DY.Labels DY.Crypto DY.Entry DY.Monad DY.Trace DY.AttackerAPI Labeled.Crypto HelperFunctions Web.Messages SerializationHelpers
+
+LIB_FILES = Labeled.ApplicationAPI Labeled.SecrecyLemmas
+
+
+LIB_BASE_FST_FILES = $(addprefix $(PROJECT_HOME)/,$(addsuffix .fst,$(LIB_BASE_FILES)))
+LIB_BASE_CMX_FILES = $(addprefix ocaml/,$(addsuffix .cmx,$(subst .,_,$(LIB_BASE_FILES))))
+LIB_FST_FILES = $(addprefix $(PROJECT_HOME)/,$(addsuffix .fst,$(LIB_FILES)))
+LIB_CMX_FILES = $(addprefix ocaml/,$(addsuffix .cmx,$(subst .,_,$(LIB_FILES))))
+
+
+.PRECIOUS: %.ml
+%.ml: verify
+	$(FSTAR) --codegen $(CODEGEN) \
+	    --include .. --odir ocaml --extract_module $(basename $(notdir $(subst _,.,$@))) \
+	    $(notdir $(subst _,.,$(subst .ml,.fst,$@)))
+
+%.cmx: %.ml
+	$(OCAMLOPT) -c $< -o $@
+
+
+# Clean targets
+SHELL=/bin/bash
+
+clean:
+	rm -rf ocaml *~ $(PROJECT_HOME)/.cache/Application.Predicates.fst.checked
+
+distclean: clean
+	rm -rf $(PROJECT_HOME)/.cache/*
+

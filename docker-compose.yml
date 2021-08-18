@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  pebble:
+    image: letsencrypt/pebble:v2.3.1
+    command: pebble -config /test/config/pebble-config.json -strict -dnsserver 10.30.50.3:8053
+    environment:
+      - GODEBUG="tls13=1"
+      - PEBBLE_WFE_NONCEREJECT=0 # Never reject valid replay nonces
+      - PEBBLE_AUTHZREUSE=0 # Do not re-use existing valid authorizations
+    ports:
+      - 14000:14000  # HTTPS ACME API
+      - 15000:15000  # HTTPS Management API
+    networks:
+      acmenet:
+        ipv4_address: 10.30.50.2
+        aliases:
+          - pebble
+
+  challtestsrv:
+    image: letsencrypt/pebble-challtestsrv:v2.3.1
+    command: pebble-challtestsrv -defaultIPv6 "" -defaultIPv4 10.30.50.3
+    ports:
+      - 8055:8055  # HTTP Management API
+    networks:
+      acmenet:
+        ipv4_address: 10.30.50.3
+        aliases:
+          - challenge-test-srv
+
+  fstaremacsdocker:
+    image: foa3ucuvi85/fstar-ocaml-emacs:3.5-b18766b5
+    command: "tail -f /dev/null"
+    networks:
+      acmenet:
+        ipv4_address: 10.30.50.5
+    container_name: fstar-emacs
+    environment:
+      FSTAR_HOME: "/home/build/FStar"
+      PROJECT_HOME: "/home/build/acmestar/fstar"
+      PROVISION_KEY_AUTHZ_TO_CHALL_TEST_SRV: "true"
+    volumes:
+      - ".:/home/build/acmestar"
+
+networks:
+  acmenet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.30.50.0/24

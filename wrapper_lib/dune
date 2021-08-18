@@ -1,0 +1,5 @@
+(library
+ (name acme_wrapper_lib)
+ (public_name acme_wrapper_lib)
+ (libraries acme ppx_deriving_yojson.runtime fstarlib pyml logs logs.fmt yaml.unix uri fmt.tty batteries)
+ (flags (:standard -keep-docs -bin-annot -warn-error -26-27-33 -g -error-style contextual)))

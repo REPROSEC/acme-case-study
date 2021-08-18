@@ -1,0 +1,9 @@
+(executable
+ (name main)
+ ; ppx_deriving_yojson.runtime is required for fstarlib
+ (libraries acme_wrapper_lib acme ppx_deriving_yojson.runtime fstarlib pyml logs logs.fmt yaml.unix uri fmt.tty batteries)
+ ; Tell dune to copy the executable to the root dir (for easier execution)
+ (promote (until-clean))
+ (flags (:standard -keep-docs -bin-annot -warn-error -26-27-33 -g -error-style contextual))
+)
+

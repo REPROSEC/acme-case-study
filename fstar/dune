@@ -1,0 +1,17 @@
+(library
+ (name acme)
+ (public_name acme_fstar_lib)
+ (libraries ppx_deriving_yojson.runtime fstarlib)
+ ; Supress warnings about:
+ ; - non-exhaustive matches (8, F* guarantees that the missing cases are never reached)
+ ; - unused match cases (11)
+ ; - unsed variables (26, 27)
+ ; - unused imports (33)
+ ; as the F* extraction creates a lot of these cases.
+ (flags (:standard -w -8-11-26-27-33))
+ ; Exclude the Test module
+ (modules (:standard \ ACME_Test))
+)
+
+; Allow dune to use ml files from our ocaml/ directory (where we keep the extracted F* modules)
+(include_subdirs unqualified)
