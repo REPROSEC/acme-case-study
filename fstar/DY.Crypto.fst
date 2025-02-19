@@ -813,9 +813,15 @@ let hash_eq_fun_lemma m1 m2 = ()
 let hash_inj_lemma m1 m2 = ()
 let hash_eq_inj_lemma m1 m2 = ()
 
-
-let dh k pk = match pk with | PK k' -> if bytes_le k k' then DH k k' else DH k' k
-			    | _ -> BadDH k pk
+/// Generate a Diffie-Hellman shared secret from a private component :math:`k` and a public
+/// component :math:`pk`.  In essence, this models calculating :math:`pk^k`.  However, because the
+/// :math:`g^{ab} = g^{ba}` equality underlying DH is modeled with an ordering relation on the
+/// private components, we need to "unpack" the public input to get back the secret input.  This may
+/// of course fail when :math:`pk` is not a public key, i.e., in the real world :math:`\not\exists
+/// a: g^a = pk`.  In that case, we return a "garbage" result (that still depends on the inputs).
+let dh k pk = match pk with
+              | PK k' -> if bytes_le k k' then DH k k' else DH k' k
+              | _ -> BadDH k pk
 
 let dh_eq_fun_lemma s1 s2 p1 p2 = ()
 let dh_shared_secret_lemma x y = ()

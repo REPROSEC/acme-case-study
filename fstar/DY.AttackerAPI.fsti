@@ -118,7 +118,7 @@ let rec attacker_can_derive (i:nat) (steps:nat) (t:bytes):
         attacker_can_derive i (steps - 1) t2) \/
       // DH shared secret
       (exists (t1 t2:bytes).
-        t == (C.dh t1 t2) /\ (C.is_pk t2) /\
+        t == (C.dh t1 t2) /\
         attacker_can_derive i (steps - 1) t1 /\
         attacker_can_derive i (steps - 1) t2))
 
@@ -276,8 +276,8 @@ val hash: #i:nat -> pub_bytes i -> pub_bytes i
 val hash_lemma: #i:nat -> t1:pub_bytes i ->
   Lemma (hash t1 == C.hash t1)
 
-val dh: #i:nat -> t1:pub_bytes i -> t2:pub_bytes i{C.is_pk t2} -> pub_bytes i
-val dh_lemma: #i:nat ->  t1:pub_bytes i -> t2:pub_bytes i{C.is_pk t2} ->
+val dh: #i:nat -> t1:pub_bytes i -> t2:pub_bytes i -> pub_bytes i
+val dh_lemma: #i:nat ->  t1:pub_bytes i -> t2:pub_bytes i ->
   Lemma (dh t1 t2 == C.dh t1 t2)
 
 /// Attacker API: Manipulation of Trace:

@@ -606,6 +606,7 @@ let rec is_valid_p (pr:preds) (idx:nat) (t:bytes) : Type0 =
   | CEOgen m -> is_valid_p pr idx m /\ can_flow (pr.model.corrupt_at idx) (get_label m) Public
   | DEOgen m sk -> is_valid_p pr idx m /\ is_valid_p pr idx sk /\
 	      can_flow (pr.model.corrupt_at idx) (get_label m) Public /\ can_flow (pr.model.corrupt_at idx) (get_label sk) Public
+  | BadDH t1 t2 -> is_valid_p pr idx t1 /\ is_valid_p pr idx t2
   | _ -> False		
 
 #push-options "--z3rlimit 200"
@@ -633,6 +634,7 @@ let rec validity_extends_lemma pr i t =
 							     let tl = Join l l' in are_kdf_labels_increasing_with_more_corruption (pr.model.corrupt_at i) tl u1
 							  else ()
 	      | _, _ -> ())
+  | BadDH t1 t2 -> validity_extends_lemma pr i t1; validity_extends_lemma pr i t2
   | _ -> ()
 #pop-options
 
@@ -886,7 +888,7 @@ let labeled_kdf_public c idx (t1:bytes) (t2:bytes) b =
 let derived_value_publishable_if_secret_and_context_are_publishable_forall c = ()
    
 val labeled_dh_public: c:preds -> idx:nat -> t1:bytes -> t2:bytes ->
-  Lemma (requires (is_publishable_p c idx t1 /\ is_publishable_p c idx t2 /\ is_pk t2))
+  Lemma (requires (is_publishable_p c idx t1 /\ is_publishable_p c idx t2))
         (ensures (is_publishable_p c idx (dh t1 t2)))
         [SMTPat (is_publishable_p c idx (dh t1 t2))]
 
@@ -1330,7 +1332,10 @@ let dh_un #p #i #l #u #up k pk =
       else ()
     | _, _ -> ());
     c
-  | _ -> err "invalid DH bytes"
+  | _ -> (
+    assert(BadDH? c);
+    err "invalid DH bytes"
+  )
 
 let hash_labeled_lemma #pr #i #l m = ()
 

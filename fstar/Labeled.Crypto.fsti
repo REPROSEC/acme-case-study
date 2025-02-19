@@ -1702,7 +1702,7 @@ val dh_un: #p:preds -> #i:nat -> #l:label -> #u:C.usage -> #up:C.usage_pred u ->
 								(eq_label (get_label c) (join l l'))
 							     else True 
 					   | None -> True))
-			   | Error x -> True))
+			   | Error x -> is_publishable_p p i (C.dh k pk)))
 
 
 /// Hashing

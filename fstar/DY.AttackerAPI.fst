@@ -281,16 +281,17 @@ let hash_lemma #i t1 = ()
 
 let dh #i t1 t2 =
   let dh_pub_lemma0 (i:nat) (t1:C.bytes) (t2:C.bytes) (steps:nat) :
-  Lemma (requires (attacker_can_derive i steps t1 /\ attacker_can_derive i steps t2 /\ C.is_pk t2))
+  Lemma (requires (attacker_can_derive i steps t1 /\ attacker_can_derive i steps t2))
         (ensures (attacker_can_derive i (steps + 1) (C.dh t1 t2)))
          = () in
   let dh_pub_lemma (i:nat) (j:nat) (t1:C.bytes) (t2:C.bytes) (steps1:nat) (steps2:nat) :
-  Lemma (requires (attacker_can_derive i steps1 t1 /\ attacker_can_derive j steps2 t2 /\ C.is_pk t2))
+  Lemma (requires (attacker_can_derive i steps1 t1 /\ attacker_can_derive j steps2 t2))
         (ensures (attacker_can_derive (max i j) (max steps1 steps2 + 1) (C.dh t1 t2)))
         [SMTPat (attacker_can_derive i steps1 t1); SMTPat (attacker_can_derive j steps2 t2)] =
         meet_derives i j steps1 steps2 t1 t2;
         dh_pub_lemma0 (max i j) t1 t2 (max steps1 steps2) in
   C.dh t1 t2
+
 let dh_lemma #i t1 t2 = ()
 
 let current_trace_len () = current_trace_len ()
